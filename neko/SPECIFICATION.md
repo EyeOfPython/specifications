@@ -24,44 +24,83 @@ The hash algorithm will be multiple iterations of SHA256 that are layered on top
 
 Usage: Entropy, Blockchaining
 
-# Layer 1 Header
+The header data structure looks as follows:
 
-+-+-+
-| 32 bytes | Previous block hash |
-| 32 bytes | Hash of Layer 2 Metadata |
-+-+-+
+| Size | Name | Meaning |
+|------|------|---------|
+| 32 bytes | hashPrevBlock | Previous block hash |
+| 4 bytes | nBits | Compact encoding of the target for this block |
+| 6 bytes | nTime | Timestamp of the block (UNIX time), good for 8 million years |
+| 10 bytes | nNonce | Nonce for miners to tweak the hash |
+| 4 bytes | nMetaVersion | Version for the data that follows; it should not yet be considered set in stone |
+| 4 bytes | nSize | Block size in MB (rounded up) |
+| 4 bytes | nHeight | Block height, where the genesis block is 0 |
+| 32 bytes | hashEpochBlock | Hash of the last block which had a height divisible by 5040 |
+| 32 bytes | hashMerkleRoot | Merkle root of the transactions of the block |
+| 32 bytes | hashExtendedMetadata | Hash of the extended metadata |
 
-# Layer 2 Header
+# Layer 1 Header: Chain Layer
 
-+-+-+
-| 8 bytes | Timestamp |
-| 4 bytes | nBits |
-| 32 bytes | Hash of Layer 3 Metadata |
-+-+-+
+This layer allows to very cheaply verify that the blocks form a chain and that PoW has been performed.
 
-# Layer 3 Header
+Can also be used as a very cheap entropy source if previous block hash is known.
 
-+-+-+
-| 32 bytes | Merkel root |
-| 8 bytes | Block size |
-| 32 bytes | Epoch block hash, 5040 block epochs |
-| 32 bytes | Extended Metadata hash |
-+-+-+
+| Size | Name | Meaning |
+|------|------|---------|
+| 32 bytes | hashPrevBlock | Previous block hash |
+| 32 bytes | hashPowLayer | SHA256 of Layer 2 Metadata |
 
-# Layer 4
+# Layer 2 Header: PoW Layer
 
-+-+-+
-| 8 byte | nonce | 
+This layer allows to verify the PoW and DAA (ASERT only requires time and height).
+
+SPV wallets can store only this layer for blocks that don't contain txs.
+
+A 6 byte timestamp is good for 8 million years; until then we will have reversed SHA256 anyway and have to do a PoW change.
+
+| Size | Name | Meaning |
+|------|------|---------|
+| 4 bytes | nBits | Compact encoding of the target for this block |
+| 6 bytes | nTime | Timestamp of the block (UNIX time) |
+| 10 bytes | nNonce | Nonce for miners to tweak the hash |
+| 32 bytes | hashTxLayer | SHA256 of Layer 3 Metadata |
+
+# Layer 3 Header: Tx layer
+
+This contains the txs merkle root, so we can verify the transactions of the block.
+
+SPV wallets store this layer for blocks that do contain txs they're interested in.
+
+Epochs are 7 days and allow skipping many blocks while still knowing they're connected. This is useful for very low spec devices and smart contracts.
+
+| Size | Name | Meaning |
+|------|------|---------|
+| 4 bytes | nMetaVersion | Version for the data that follows; it should not yet be considered set in stone |
+| 4 bytes | nSize | Block size in MB (rounded up) |
+| 4 bytes | nHeight | Block height, where the genesis block is 0 |
+| 32 bytes | hashEpochBlock | Epoch block hash, 5040 block epochs (7 days) |
+| 32 bytes | hashMerkleRoot | Txs Merkle root |
+| 32 bytes | hashExtendedMetadata | Extended Metadata hash |
+
+# Layer 4: Extended Metadata
+
+This contains additional data which is only relevant for consensus.
+
+For better upgradability, it has a key-value layout. The maximum size of the metadata, for now, is 100 bytes.
+
+Optional fields are:
+* `1`: extra nonce (1-32 bytes), to tweak the hash some more.
+* `2`: memo (1-32 bytes), to leave some arbitrary message
+
+| Type | Meaning |
+|------|---------|
 | var_int | number of fields |
-| metadata_field[] | |
-+-+-+
+| metadata_field[] | fields |
 
 Metadata field format:
 
-+-+-+
+| Type | Meaning |
+|------|---------|
 | 4 bytes | field ID |
 | var_int | length |
 | uchar[] | data |
-+-+-+
-
-The nonce is 
