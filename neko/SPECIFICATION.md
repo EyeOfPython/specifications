@@ -31,9 +31,10 @@ The header data structure looks as follows:
 | 32 bytes | hashPrevBlock | Previous block hash |
 | 4 bytes | nBits | Compact encoding of the target for this block |
 | 6 bytes | nTime | Timestamp of the block (UNIX time), good for 8 million years |
-| 10 bytes | nNonce | Nonce for miners to tweak the hash |
-| 4 bytes | nMetaVersion | Version for the data that follows; it should not yet be considered set in stone |
-| 4 bytes | nSize | Block size in MB (rounded up) |
+| 2 bytes | nReserved | Reserved for future use, always 0x0000 |
+| 8 bytes | nNonce | Nonce for miners to tweak the hash |
+| 1 bytes | nMetaVersion | Version for the data that follows; it should not yet be considered set in stone |
+| 7 bytes | nSize | Block size in bytes |
 | 4 bytes | nHeight | Block height, where the genesis block is 0 |
 | 32 bytes | hashEpochBlock | Hash of the last block which had a height divisible by 5040 |
 | 32 bytes | hashMerkleRoot | Merkle root of the transactions of the block |
@@ -62,7 +63,8 @@ A 6 byte timestamp is good for 8 million years; until then we will have reversed
 |------|------|---------|
 | 4 bytes | nBits | Compact encoding of the target for this block |
 | 6 bytes | nTime | Timestamp of the block (UNIX time) |
-| 10 bytes | nNonce | Nonce for miners to tweak the hash |
+| 2 bytes | nReserved | Reserved for future use, always 0x0000 |
+| 8 bytes | nNonce | Nonce for miners to tweak the hash |
 | 32 bytes | hashTxLayer | SHA256 of Layer 3 Metadata |
 
 # Layer 3 Header: Tx layer
@@ -75,8 +77,8 @@ Epochs are 7 days and allow skipping many blocks while still knowing they're con
 
 | Size | Name | Meaning |
 |------|------|---------|
-| 4 bytes | nMetaVersion | Version for the data that follows; it should not yet be considered set in stone |
-| 4 bytes | nSize | Block size in MB (rounded up) |
+| 1 bytes | nMetaVersion | Version for the data that follows; it should not yet be considered set in stone |
+| 7 bytes | nSize | Block size in bytes |
 | 4 bytes | nHeight | Block height, where the genesis block is 0 |
 | 32 bytes | hashEpochBlock | Epoch block hash, 5040 block epochs (7 days) |
 | 32 bytes | hashMerkleRoot | Txs Merkle root |
